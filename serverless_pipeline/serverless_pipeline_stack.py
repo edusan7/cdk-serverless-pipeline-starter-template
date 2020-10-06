@@ -21,7 +21,8 @@ class ServerlessPipelineStack(core.Stack):
         )
 
         repo = commit.Repository(
-            self, 'cdk-serverless-pipeline-template',
+            self, 'BuildSource',
+            repository_name='cdk-serverless-pipeline',
         )
 
         artifact_bucket = s3.Bucket(
