@@ -3,6 +3,7 @@ from aws_cdk import (
     core,
     aws_s3 as s3,
     aws_ssm as ssm,
+    aws_codecommit as commit,
     aws_codebuild as build,
     aws_codepipeline as pipeline,
     aws_codepipeline_actions as actions,
@@ -19,19 +20,8 @@ class ServerlessPipelineStack(core.Stack):
             parameter_name='/serverless-pipeline/sns/notifications/primary-email'
         )
 
-        github_user = ssm.StringParameter.value_from_lookup(
-            self,
-            parameter_name='/serverless-pipeline/codepipeline/github/user'
-        )
-
-        github_repo = ssm.StringParameter.value_from_lookup(
-            self,
-            parameter_name='/serverless-pipeline/codepipeline/github/repo'
-        )
-
-        github_token = core.SecretValue.secrets_manager(
-            '/serverless-pipeline/secrets/github/token',
-            json_field='github-token',
+        repo = commit.Repository(
+            self, 'cdk-serverless-pipeline-template',
         )
 
         artifact_bucket = s3.Bucket(
@@ -110,12 +100,9 @@ class ServerlessPipelineStack(core.Stack):
         # NOTE: This Stage/Action requires a manual OAuth handshake in the browser be complete before automated deployment can occur
         # Create a new Pipeline in the console, manually authorize GitHub as a source, and then cancel the pipeline wizard.
         serverless_pipeline.add_stage(stage_name='Source', actions=[
-            actions.GitHubSourceAction(
+            actions.CodeCommitSourceAction(
                 action_name='SourceCodeRepo',
-                owner=github_user,
-                oauth_token=github_token,
-                repo=github_repo,
-                branch='master',
+                repository=repo,
                 output=source_output,
             )
         ])
